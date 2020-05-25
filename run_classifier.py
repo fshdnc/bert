@@ -61,6 +61,10 @@ flags.DEFINE_bool(
     "Whether to lower case the input text. Should be True for uncased "
     "models and False for cased models.")
 
+flags.DEFINE_bool(
+    "trainable_word_emb", True,
+    "Whether to the vocab weights are trainable, set to false to freeze.")
+
 flags.DEFINE_integer(
     "max_seq_length", 128,
     "The maximum total input sequence length after WordPiece tokenization. "
@@ -471,6 +475,47 @@ class OparcusProcessor(DataProcessor):
           InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
     return examples
 
+class FinparProcessor(DataProcessor):
+  """Processor for the machine translated MRPC data set (GLUE version)."""
+
+  def get_train_examples(self, data_dir):
+    """See base class."""
+    raise FileNotFoundError("Finpar only has dev set.")
+    #return self._create_examples(
+    #    self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+
+  def get_dev_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+
+  def get_test_examples(self, data_dir):
+    """See base class."""
+    raise FileNotFoundError("Finpar only has dev set.")
+    #return self._create_examples(
+    #    self._read_tsv(os.path.join(data_dir, "test.tsv")), "test")
+
+  def get_labels(self):
+    """See base class."""
+    return ["0", "1"]
+
+  def _create_examples(self, lines, set_type):
+    """Creates examples for the training and dev sets."""
+    examples = []
+    for (i, line) in enumerate(lines):
+      if i == 0:
+        continue
+      guid = "%s-%s" % (set_type, i)
+      text_a = tokenization.convert_to_unicode(line[1])
+      text_b = tokenization.convert_to_unicode(line[2])
+      if set_type == "test":
+        label = "0"
+      else:
+        label = tokenization.convert_to_unicode(line[0])
+      examples.append(
+          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+    return examples
+
 class ColaProcessor(DataProcessor):
   """Processor for the CoLA data set (GLUE version)."""
 
@@ -824,9 +869,18 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         accuracy = tf.metrics.accuracy(
             labels=label_ids, predictions=predictions, weights=is_real_example)
         loss = tf.metrics.mean(values=per_example_loss, weights=is_real_example)
+        auc = tf.metrics.auc(
+            labels=label_ids, predictions=predictions, weights=is_real_example)
+        precision = tf.metrics.precision(
+            labels=label_ids, predictions=predictions, weights=is_real_example)
+        recall = tf.metrics.recall(
+            labels=label_ids, predictions=predictions, weights=is_real_example)
         return {
+            "auc": auc,
             "eval_accuracy": accuracy,
             "eval_loss": loss,
+            "precision": precision,
+            "recall": recall,
         }
 
       eval_metrics = (metric_fn,
@@ -929,6 +983,7 @@ def main(_):
       "xnli": XnliProcessor,
       "mult": MultProcessor,
       "opar": OparcusProcessor,
+      "finpar":FinparProcessor,
   }
 
   tokenization.validate_case_matches_checkpoint(FLAGS.do_lower_case,

@@ -61,6 +61,10 @@ flags.DEFINE_bool(
     "Whether to lower case the input text. Should be True for uncased "
     "models and False for cased models.")
 
+flags.DEFINE_bool(
+    "trainable_word_emb", True,
+    "Whether to the vocab weights are trainable, set to false to freeze.")
+
 flags.DEFINE_integer(
     "max_seq_length", 128,
     "The maximum total input sequence length after WordPiece tokenization. "
@@ -696,9 +700,18 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         accuracy = tf.metrics.accuracy(
             labels=label_ids, predictions=predictions, weights=is_real_example)
         loss = tf.metrics.mean(values=per_example_loss, weights=is_real_example)
+        auc = tf.metrics.auc(
+            labels=label_ids, predictions=predictions, weights=is_real_example)
+        precision = tf.metrics.precision(
+            labels=label_ids, predictions=predictions, weights=is_real_example)
+        recall = tf.metrics.recall(
+            labels=label_ids, predictions=predictions, weights=is_real_example)
         return {
+            "auc": auc,
             "eval_accuracy": accuracy,
             "eval_loss": loss,
+            "precision": precision,
+            "recall": recall,
         }
 
       eval_metrics = (metric_fn,

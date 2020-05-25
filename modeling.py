@@ -42,7 +42,8 @@ class BertConfig(object):
                attention_probs_dropout_prob=0.1,
                max_position_embeddings=512,
                type_vocab_size=16,
-               initializer_range=0.02):
+               initializer_range=0.02,
+               trainable_word_emb=True):
     """Constructs BertConfig.
 
     Args:
@@ -66,6 +67,7 @@ class BertConfig(object):
         `BertModel`.
       initializer_range: The stdev of the truncated_normal_initializer for
         initializing all weight matrices.
+      trainable_word_emb: If false, freeze the vocab weights
     """
     self.vocab_size = vocab_size
     self.hidden_size = hidden_size
@@ -78,6 +80,7 @@ class BertConfig(object):
     self.max_position_embeddings = max_position_embeddings
     self.type_vocab_size = type_vocab_size
     self.initializer_range = initializer_range
+    self.trainable_word_emb = trainable_word_emb
 
   @classmethod
   def from_dict(cls, json_object):
@@ -177,7 +180,8 @@ class BertModel(object):
             embedding_size=config.hidden_size,
             initializer_range=config.initializer_range,
             word_embedding_name="word_embeddings",
-            use_one_hot_embeddings=use_one_hot_embeddings)
+            use_one_hot_embeddings=use_one_hot_embeddings,
+            trainable=config.trainable_word_emb)
 
         # Add positional embeddings and token type embeddings, then layer
         # normalize and perform dropout.
@@ -382,7 +386,8 @@ def embedding_lookup(input_ids,
                      embedding_size=128,
                      initializer_range=0.02,
                      word_embedding_name="word_embeddings",
-                     use_one_hot_embeddings=False):
+                     use_one_hot_embeddings=False,
+                     trainable=True):
   """Looks up words embeddings for id tensor.
 
   Args:
@@ -409,7 +414,8 @@ def embedding_lookup(input_ids,
   embedding_table = tf.get_variable(
       name=word_embedding_name,
       shape=[vocab_size, embedding_size],
-      initializer=create_initializer(initializer_range))
+      initializer=create_initializer(initializer_range),
+      trainable=trainable)
 
   flat_input_ids = tf.reshape(input_ids, [-1])
   if use_one_hot_embeddings:
