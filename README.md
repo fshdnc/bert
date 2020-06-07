@@ -1,7 +1,14 @@
 # BERT
 
-## STS-B
-Code for regression modified from: https://github.com/swen128/bert-sts
+## Own modifications to the original repo
+
+`modeling.py` modified to include the option to freeze vocabulary embeddings
+`run_classifier.py` added more processors for our own experiments.
+`run_classifier_glue.py` modified from `run_classifier.py`, requires a modified version of the glue dataset, not the one downloaded using the helper script provided by the GLUE leaderboard. This script is used for fine-tuning.
+`run_classifier_glue_submission.py` modified from `run_classifier.py`, uses the glue dataset provided by the GLUE leaderboard. This script is used for inference.
+`run_reg.py` modified from: https://github.com/swen128/bert-sts for regression tasks.
+
+## Google's BERT
 
 **\*\*\*\*\* New March 11th, 2020: Smaller BERT Models \*\*\*\*\***
 
